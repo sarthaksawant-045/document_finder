@@ -3,12 +3,20 @@ from docx import Document
 from PyPDF2 import PdfReader
 
 def read_txt(file_path):
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-        return f.read()
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except Exception as e:
+        print(f"[!] Error reading TXT {file_path}: {e}")
+        return ""
 
 def read_docx(file_path):
-    doc = Document(file_path)
-    return "\n".join([para.text for para in doc.paragraphs])
+    try:
+        doc = Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
+    except Exception as e:
+        print(f"[!] Error reading DOCX {file_path}: {e}")
+        return ""
 
 def read_pdf(file_path):
     try:
@@ -19,21 +27,30 @@ def read_pdf(file_path):
         return ""
 
 def parse_file(file_path):
-    if file_path.lower().endswith(".txt"):
+    ext = file_path.lower()
+    if ext.endswith(".txt"):
         return read_txt(file_path)
-    elif file_path.lower().endswith(".docx"):
+    elif ext.endswith(".docx"):
         return read_docx(file_path)
-    elif file_path.lower().endswith(".pdf"):
+    elif ext.endswith(".pdf"):
         return read_pdf(file_path)
-    return None
+    else:
+        print(f"[!] Unsupported file format: {file_path}")
+        return None
 
 def scan_and_parse_documents(base_dir):
     parsed_documents = {}
+    print(f"📁 Scanning folder: {base_dir}")
+
     for root, _, files in os.walk(base_dir):
         for file in files:
             path = os.path.join(root, file)
             if file.lower().endswith(('.txt', '.docx', '.pdf')):
+                print(f"🔍 Parsing: {path}")
                 text = parse_file(path)
                 if text:
                     parsed_documents[path] = text
+                else:
+                    print(f"[!] Failed to parse: {path}")
+    print("✅ Scanning and parsing complete.")
     return parsed_documents
