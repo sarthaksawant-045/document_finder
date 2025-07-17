@@ -2,10 +2,12 @@ import faiss
 import numpy as np
 import os
 import pickle
+import requests
 from vectorizer import Embedder
 
 INDEX_PATH = "vector_store/index.faiss"
 META_PATH = "vector_store/meta.pkl"
+DB_API_URL = "http://127.0.0.1:5004/add_metadata"
 
 embedder = Embedder()
 
@@ -36,5 +38,16 @@ def index_documents(doc_dict):
     meta = load_metadata()
     meta.extend(paths)
     save_metadata(meta)
+
+    # ✅ Send to DB API after indexing
+    try:
+        print("📤 Sending documents to DB service...")
+        res = requests.post(
+            DB_API_URL,
+            json={"documents": doc_dict}
+        )
+        print("🧠 DB response:", res.status_code, res.text)
+    except Exception as e:
+        print("[DB ERROR] Failed to send to DB:", e)
 
     return len(paths)
