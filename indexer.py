@@ -4,8 +4,8 @@ import os
 import pickle
 from vectorizer import Embedder
 
-INDEX_PATH = "vector_store/index.faiss"
-META_PATH = "vector_store/meta.pkl"
+INDEX_PATH = "vector_storeTanmay/index.faiss"
+META_PATH = "vector_storeTanmay/meta.pkl"
 
 embedder = Embedder()
 
