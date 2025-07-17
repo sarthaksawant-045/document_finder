@@ -1,33 +1,34 @@
 # db.py
+import os
 import sqlite3
+from datetime import datetime
+from models import DB_PATH
 
-DB_NAME = 'documents.db'
-
-def connect_db():
-    return sqlite3.connect(DB_NAME)
-
-def insert_metadata(filename, filepath, filetype, vector_id=None):
-    conn = connect_db()
+def insert_document_metadata(filepath, content):
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO documents (filename, filepath, filetype, vector_id, embedding_status)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (filename, filepath, filetype, vector_id, 'done' if vector_id else 'pending'))
-    conn.commit()
-    conn.close()
 
-def fetch_all_documents():
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM documents')
-    results = cursor.fetchall()
-    conn.close()
-    return results
+    try:
+        stats = os.stat(filepath)
+        filename = os.path.basename(filepath)
+        filetype = os.path.splitext(filepath)[1][1:]
+        filesize = stats.st_size
+        modified_at = datetime.fromtimestamp(stats.st_mtime).isoformat()
 
-def get_document_by_filename(filename):
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM documents WHERE filename = ?', (filename,))
-    result = cursor.fetchone()
-    conn.close()
-    return result
+        # Insert metadata
+        cursor.execute('''
+            INSERT INTO documents (filepath, filename, filetype, filesize, modified_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (filepath, filename, filetype, filesize, modified_at))
+
+        # Insert full-text content
+        cursor.execute('''
+            INSERT INTO document_text (filepath, content)
+            VALUES (?, ?)
+        ''', (filepath, content))
+
+        conn.commit()
+    except Exception as e:
+        print(f"[DB Error] {e}")
+    finally:
+        conn.close()
